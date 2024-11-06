@@ -5,20 +5,11 @@ from models import db, FormalMember, Checkins
 from datetime import datetime
 import hashlib
 
+from utils.cryptus import hash_pswd, check_pswd
+
 app = Flask(__name__)
 app.config.from_object(Config)
 db.init_app(app)
-
-
-def hash_pswd(password, date):
-    """
-    生成密码，将注册日期与密码拼接后进行md5加密，这样即使密码相同，也会生成不同的加密串
-    :param password: 明文密码
-    :param date: 注册日期
-    :return: 加密后的密码
-    """
-    ps = date + password
-    return Config.hasher(ps.encode()).hexdigest()
 
 
 @app.route('/')
