@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/SeekitMgrSystem.iml" filepath="$PROJECT_DIR$/.idea/SeekitMgrSystem.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../EmployeeMgrSystem/.idea/ThesisMgr.iml" filepath="$PROJECT_DIR$/../EmployeeMgrSystem/.idea/ThesisMgr.iml" />
     </modules>
   </component>
 </project>
