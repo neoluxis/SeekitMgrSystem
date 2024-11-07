@@ -22,14 +22,29 @@ class Flaskr:
         self.register_hooks()
 
     def register_routes(self):
+        self.register_usermgr_routes()
+
         @self.app.route('/')
         def index():
-            return 'Hello, World!'
+            return render_template('home.html')
 
     def register_hooks(self):
         @self.app.before_request
         def before_request():
             pass
+
+    def register_usermgr_routes(self):
+        @self.app.route('/signup', methods=['GET', 'POST'])
+        def signup():
+            return 'signup page'
+
+        @self.app.route('/signin', methods=['GET', 'POST'])
+        def signin():
+            return 'signin page'
+
+        @self.app.route('/signout', methods=['GET', 'POST'])
+        def signout():
+            return 'signout page'
 
     def clear_db(self):
         """ 清空数据库的所有数据 """
