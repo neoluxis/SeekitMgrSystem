@@ -1,5 +1,7 @@
 import os
 import hashlib
+import logging
+
 from utils.findme import am_i_on_cloud
 
 
@@ -24,3 +26,6 @@ class Config:
 
     # 用于密码加密的哈希算法
     hasher = hashlib.md5
+
+    # log level
+    LOG_LEVEL = logging.DEBUG

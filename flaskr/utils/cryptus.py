@@ -8,11 +8,13 @@ def hash_pswd(password, date):
     :param date: 注册日期
     :return: 加密后的密码
     """
-    ps = date + password
+    if type(date) is not str:
+        date = str(date)
+    ps = password + date
     return Config.hasher(ps.encode()).hexdigest()
 
 
-def check_pswd(password, date, hash_pswd):
+def check_pswd(password, date, hash_psw):
     """
     检查密码是否正确
     :param password:  明文密码
@@ -20,8 +22,8 @@ def check_pswd(password, date, hash_pswd):
     :param hash_pswd: 加密后的密码
     :return:
     """
-    return hash_pswd == hash_pswd(password, date)
+    return hash_psw == hash_pswd(password, date)
 
 
 if __name__ == '__main__':
-    print(hash_pswd('123456', '2024-01-01'))
+    print(hash_pswd('2201400216', '2024-11-07'))

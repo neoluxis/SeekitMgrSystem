@@ -18,4 +18,4 @@ class Character:
 
 
 if __name__ == '__main__':
-    print(Character.VICE_PRESIDENT | Character.PRESIDENT)
+    print(Character.VICE_PRESIDENT | Character.FORMAL_MEMBER | Character.SUBMARINE)
