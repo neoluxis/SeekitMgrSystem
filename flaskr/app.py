@@ -21,7 +21,7 @@ class Flaskr:
 
         self.register_routes()
         self.register_hooks()
-        self.register_api_routes()
+        self.register_api()
 
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(self.app.config['LOG_LEVEL'])
@@ -56,8 +56,8 @@ class Flaskr:
         def signout():
             return 'signout page'
 
-    def register_api_routes(self):
-        @self.app.route('/api/signup', methods=['POST'])
+    def register_api(self):
+        @self.app.route('/api/account/signup', methods=['POST'])
         def api_signup():
             info_submitted = request.json
             username = info_submitted.get('username')
@@ -83,19 +83,21 @@ class Flaskr:
                 return jsonify({'status': 'failed', 'message': 'Failed to register user'})
             return jsonify({'status': 'success', 'message': 'User registered successfully'})
 
-        @self.app.route('/api/signin', methods=['POST'])
+        @self.app.route('/api/account/signin', methods=['POST'])
         def api_signin():
-            info_submitted = request.json
-            username = info_submitted.get('username')
-            password = info_submitted.get('password')
-            user = FormalMember.query.filter_by(username=username).first()
-            if user is None:
-                return jsonify({'status': 'failed', 'message': 'User not found'})
-            if not check_pswd(password, user.register_date, user.password):
+            # info_submitted = request.json
+            # username = info_submitted.get('username')
+            # password = info_submitted.get('password')
+            # user = FormalMember.query.filter_by(username=username).first()
+            # if user is None:
+            #     return jsonify({'status': 'failed', 'message': 'User not found'})
+            # if not check_pswd(password, user.register_date, user.password):
+            #     return jsonify({'status': 'failed', 'message': 'Password incorrect'})
+            if not self.check_passwd(request.json.get('username'), request.json.get('password')):
                 return jsonify({'status': 'failed', 'message': 'Password incorrect'})
             return jsonify({'status': 'success', 'message': 'Login success'})
 
-        @self.app.route('/api/remove', methods=['POST'])
+        @self.app.route('/api/account/remove', methods=['POST'])
         def api_remove():
             info_submitted = request.json
             username = info_submitted.get('username')
@@ -115,16 +117,46 @@ class Flaskr:
                 return jsonify({'status': 'failed', 'message': 'Failed to remove user'})
             return jsonify({'status': 'success', 'message': 'User removed successfully'})
 
+        @self.app.route('/api/checkin/list', methods=['POST'])
+        def api_checkin_list():
+            is_admin = self.check_admin(request.json.get('username'))
+            if is_admin:
+                checkins = Checkins.query.all()
+            else:
+                checkins = Checkins.query.filter_by(username=request.json.get('username')).all()
+            return jsonify({'status': 'success', 'checkins': [c.to_dict() for c in checkins]})
+
         @self.app.route('/api/checkin', methods=['POST'])
         def api_checkin():
-            pass
+            ck_date = datetime.now().strftime('%Y-%m-%d')
+            ck_time = datetime.now().strftime('%H:%M:%S')
+            ck_rec = Checkins(
+                username=request.json.get('username'),
+                chdate=ck_date,
+                chtime=ck_time,
+            )
+            db.session.add(ck_rec)
+            db.session.commit()
+            self.get_logger().info(f"User {request.json.get('username')} checkin at {ck_date}/{ck_time}")
+            return jsonify(
+                {'status': 'success', 'message': f"User {request.json.get('username')} checkin at {ck_date}/{ck_time}"})
+
+        @self.app.route('/api/account/clear_trainee', methods=['POST'])
+        def api_clear_trainee():
+            if not self.check_passwd(request.json.get('username'), request.json.get('password')):
+                return jsonify({'status': 'failed', 'message': 'Password incorrect'})
+            user = FormalMember.query.filter_by(username=request.json.get('username')).first()
+            if (user.character & (Character.VICE_PRESIDENT | Character.PRESIDENT)) == 0:
+                return jsonify({'status': 'failed', 'message': 'Permission denied'})
+            self.clear_trainee()
+            return jsonify({'status': 'success', 'message': 'All accounts of trainees have been removed'})
 
     def clear_db(self):
         """ 清空数据库的所有数据 """
         with self.app.app_context():
             db.drop_all()
             db.create_all()
-            print("Database has been cleared and reset.")
+        self.get_logger().info("Database has been cleared.")
 
     def clear_trainee(self):
         """ 清空数据库中的所有新生 """
@@ -133,7 +165,26 @@ class Flaskr:
             for trainee in trainees:
                 db.session.delete(trainee)
             db.session.commit()
-            print("All trainees have been removed.")
+            self.get_logger().info("All trainees have been removed.")
+
+    def delete_table_by_name(self, table_name):
+        """ 删除数据库中的指定表 """
+        with self.app.app_context():
+            if table_name in db.metadata.tables.keys():
+                db.metadata.tables[table_name].drop(db.engine)
+                self.get_logger().info(f"Table {table_name} has been removed.")
+            else:
+                self.get_logger().error(f"Table {table_name} not found.")
+
+    def create_table_by_name(self, table_name):
+        """ 创建数据库中的指定表 """
+        with self.app.app_context():
+            try:
+                db.metadata.tables[table_name].create(db.engine)
+                self.get_logger().info(f"Table {table_name} has been created.")
+            except Exception as e:
+                self.get_logger().error(f"Failed to create table {table_name}.")
+                self.get_logger().error(e)
 
     def run(self):
         with self.app.app_context():
@@ -142,6 +193,20 @@ class Flaskr:
                      host=self.app.config['APP_HOST'],
                      port=self.app.config['APP_PORT'])
 
+    @staticmethod
+    def check_passwd(username, password):
+        user = FormalMember.query.filter_by(username=username).first()
+        if user is None:
+            return False
+        return check_pswd(password, user.register_date, user.password)
+
+    @staticmethod
+    def check_admin(username):
+        user = FormalMember.query.filter_by(username=username).first()
+        if user is None:
+            return False
+        return (user.character & (Character.VICE_PRESIDENT | Character.PRESIDENT)) != 0
+
 
 def main(opt):
     app_instance = Flaskr()
@@ -149,6 +214,10 @@ def main(opt):
         app_instance.clear_db()
     elif opt.clean_trainee:
         app_instance.clear_trainee()
+    elif opt.delete_table != '':
+        app_instance.delete_table_by_name(opt.delete_table)
+    elif opt.create_table != '':
+        app_instance.create_table_by_name(opt.create_table)
     else:
         app_instance.run()
 
@@ -157,6 +226,8 @@ def parse_opt():
     parser = argparse.ArgumentParser(description="Flask Application CLI")
     parser.add_argument('--clear-db', action='store_true', help='Clear and reset the database')
     parser.add_argument('--clean-trainee', action='store_true', help='Remove all trainees')
+    parser.add_argument('--delete-table', type=str, default='', help='Delete a specific table')
+    parser.add_argument('--create-table', type=str, default='', help='Create a specific table')
     return parser.parse_args()
 
 

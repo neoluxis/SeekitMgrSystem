@@ -17,6 +17,9 @@ def get_local_ip():
 
 def am_i_on_cloud():
     my_ip = get_local_ip()
-    if my_ip.startswith('31.'):
-        return True
-    return False
+    if my_ip.startswith('192.'):
+        return False
+    return True
+
+if __name__ == '__main__':
+    print(am_i_on_cloud())
