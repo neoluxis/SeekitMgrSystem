@@ -141,6 +141,22 @@ class Flaskr:
             return jsonify(
                 {'status': 'success', 'message': f"User {request.json.get('username')} checkin at {ck_date}/{ck_time}"})
 
+        @self.app.route('/api/credit/stat', methods=['POST'])
+        def api_credit_stat():
+            """
+            统计成员的积分，包括各种统计
+            :return:
+            """
+            return jsonify({'status': 'success', 'message': 'Credit stat success'})
+
+        @self.app.route('/api/credit/update', methods=['POST'])
+        def api_credit_update():
+            """
+            更新成员的积分
+            :return:
+            """
+            return jsonify({'status': 'success', 'message': 'Credit update success'})
+
         @self.app.route('/api/account/clear_trainee', methods=['POST'])
         def api_clear_trainee():
             if not self.check_passwd(request.json.get('username'), request.json.get('password')):

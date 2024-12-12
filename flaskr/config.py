@@ -29,3 +29,7 @@ class Config:
 
     # log level
     LOG_LEVEL = logging.DEBUG
+
+class RouteConfig:
+    api_ver = 'v1'
+    api_prefix = f'/api/{api_ver}'
